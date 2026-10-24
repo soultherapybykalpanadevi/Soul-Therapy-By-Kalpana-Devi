@@ -1,190 +1,7 @@
 
-<!doctype html>
-<html lang="ta">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>முன்பதிவு | Soul Therapy by Kalpana Devi</title>
-  <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-
-<div class="topbar">
-  <div class="container">
-    <span>தனிப்பட்ட வழிகாட்டுதல் • ஆன்லைன் மற்றும் நேரடி அமர்வுகள்</span>
-    <span>WhatsApp: +91 95855 22336</span>
-  </div>
-</div>
-
-<div class="nav-wrap">
-  <div class="container nav">
-    <a class="brand" href="index.html" aria-label="Soul Therapy home">
-      <img class="brand-mark" src="assets/soul-therapy-round-logo.png" alt="Soul Therapy round pink logo">
-      <span class="brand-name">SOUL THERAPY<small>BY KALPANA DEVI</small></span>
-    </a>
-    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
-    <nav class="nav-links" aria-label="Main navigation">
-      <a href="index.html">முகப்பு</a>
-      <a href="services.html">சேவைகள்</a>
-      <a href="booking.html">முன்பதிவு</a>
-      <a href="contact.html">தொடர்பு</a>
-    </nav>
-    <a class="btn btn-primary nav-cta" href="booking.html">முன்பதிவு செய்யுங்கள் ↗</a>
-  </div>
-</div>
-
-<main>
-  <section class="page-hero">
-    <div class="container">
-      <div class="breadcrumb">முகப்பு / முன்பதிவு</div>
-      <h1>உங்கள் அமர்வை முன்பதிவு செய்யுங்கள்</h1>
-      <p>கீழே உள்ள விவரங்களை நிரப்பி உங்கள் முன்பதிவு கோரிக்கையைச் சமர்ப்பிக்கவும்.</p>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="container booking-layout">
-
-      <aside class="booking-summary">
-        <div class="eyebrow" style="color:#f2dfad">BOOKING OVERVIEW</div>
-        <h2>உங்களுக்கான அடுத்த படி</h2>
-        <p>உங்கள் வசதிக்கேற்ற சேவையைத் தேர்ந்தெடுத்து, விருப்பமான தேதி மற்றும் நேரத்தைக் குறிப்பிடுங்கள்.</p>
-        <ul>
-          <li>நேரடி தொடர்பு — ₹1,500</li>
-          <li>காணொளி அழைப்பு — ₹2,500</li>
-          <li>WhatsApp அழைப்பு — ₹888</li>
-        </ul>
-        <div style="border-top:1px solid #ffffff30;padding-top:20px;margin-top:22px">
-          <p style="margin:0">தொடர்புக்கு</p>
-          <strong>+91 95855 22336</strong><br>
-          <strong>+91 99948 52577</strong>
-        </div>
-      </aside>
-
-      <section class="form-card">
-        <h2 style="font-size:34px">முன்பதிவு விவரங்கள்</h2>
-        <p style="color:var(--muted);font-size:13px">* குறியிட்ட விவரங்கள் கட்டாயம்.</p>
-
-        <form id="bookingForm">
-          <div class="form-grid">
-
-            <div class="field">
-              <label for="name">முழுப் பெயர் *</label>
-              <input id="name" name="name" required maxlength="120"
-                autocomplete="name" placeholder="உங்கள் பெயர்">
-            </div>
-
-            <div class="field">
-              <label for="phone">தொலைபேசி எண் *</label>
-              <input id="phone" name="phone" required type="tel"
-                maxlength="30" autocomplete="tel"
-                pattern="[0-9+ ()-]{8,30}" placeholder="உங்கள் எண்">
-            </div>
-
-            <div class="field full">
-              <label for="email">மின்னஞ்சல் முகவரி (விருப்பத்திற்கேற்ப)</label>
-              <input id="email" name="email" type="email"
-                maxlength="254" autocomplete="email"
-                placeholder="உங்கள் மின்னஞ்சல்">
-            </div>
-
-            <div class="field full">
-              <label for="service">ஆலோசனை வகை *</label>
-              <select id="service" name="service" required>
-                <option value="">தேர்வு செய்யவும்</option>
-                <option data-price="1500" value="in_person">நேரடி தொடர்பு — ₹1,500</option>
-                <option data-price="2500" value="video_call">காணொளி அழைப்பு — ₹2,500</option>
-                <option data-price="888" value="whatsapp_call">WhatsApp அழைப்பு — ₹888</option>
-              </select>
-              <div class="help-text">
-                தேர்ந்தெடுத்த சேவையின் கட்டணம்:
-                <strong id="selectedPrice">தேர்வு செய்யவும்</strong>
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="date">விருப்பமான தேதி</label>
-              <input id="date" name="date" type="date">
-            </div>
-
-            <div class="field">
-              <label for="time">விருப்பமான நேரம்</label>
-              <input id="time" name="time" type="time">
-            </div>
-
-            <div class="field full">
-              <label for="concern">எந்த விஷயத்திற்காக வழிகாட்டுதல் தேவை?</label>
-              <textarea id="concern" name="concern" maxlength="2000"
-                placeholder="சுருக்கமாக எழுதவும்"></textarea>
-            </div>
-
-            <div class="field full">
-              <label for="photo">புகைப்படம் (விருப்பத்திற்கேற்ப)</label>
-              <input id="photo" name="photo" type="file"
-                accept="image/png,image/jpeg,image/webp">
-              <div class="help-text">
-                புகைப்படத்தைத் தேர்ந்தெடுக்கலாம். பாதுகாப்பான புகைப்படப் பதிவேற்றம் இன்னும் அமைக்கப்படவில்லை; எனவே இந்தப் படிவம் புகைப்படத்தைச் சேமிக்காது.
-              </div>
-            </div>
-
-            <div class="field full">
-              <label class="checkbox-row">
-                <input type="checkbox" id="consent" required>
-                <span>எனது முன்பதிவு விவரங்களை ஆலோசனை ஏற்பாடு செய்வதற்காகப் பயன்படுத்த ஒப்புக்கொள்கிறேன். *</span>
-              </label>
-            </div>
-
-            <div class="field full">
-              <button class="btn btn-primary" id="submitBooking"
-                type="submit" style="width:100%">
-                முன்பதிவு விவரங்களைச் சமர்ப்பிக்கவும் ↗
-              </button>
-            </div>
-
-          </div>
-        </form>
-
-        <div id="formStatus" class="notice" hidden role="status" aria-live="polite"></div>
-      </section>
-    </div>
-  </section>
-</main>
-
-<footer>
-  <div class="container">
-    <div class="footer-grid">
-      <div>
-        <a class="brand" href="index.html">
-          <img class="brand-mark" src="assets/soul-therapy-round-logo.png" alt="Soul Therapy round pink logo">
-          <span class="brand-name" style="color:#fff">SOUL THERAPY<small style="color:#d9c9d6">BY KALPANA DEVI</small></span>
-        </a>
-        <p style="margin-top:18px;max-width:330px">உங்கள் வாழ்க்கைப் பயணத்தில் தெளிவு, நம்பிக்கை மற்றும் தனிப்பட்ட வழிகாட்டுதலைப் பெறுவதற்கான இடம்.</p>
-      </div>
-      <div>
-        <h3>விரைவு இணைப்புகள்</h3>
-        <div class="footer-links">
-          <a href="index.html">முகப்பு</a>
-          <a href="services.html">சேவைகள்</a>
-          <a href="booking.html">முன்பதிவு</a>
-          <a href="contact.html">தொடர்பு</a>
-        </div>
-      </div>
-      <div>
-        <h3>தொடர்புக்கு</h3>
-        <p>மதுரை மற்றும் திருப்பூர்</p>
-        <p><a href="https://wa.me/919585522336">+91 95855 22336</a></p>
-        <p><a href="https://wa.me/919994852577">+91 99948 52577</a></p>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span>© <span id="year"></span> Soul Therapy by Kalpana Devi</span>
-      <span>தனிப்பட்ட வழிகாட்டுதல் மற்றும் ஆலோசனை</span>
-    </div>
-  </div>
-</footer>
-
 <script>
-document.getElementById("year").textContent = new Date().getFullYear();
+document.getElementById("year").textContent =
+  new Date().getFullYear();
 
 const SUPABASE_FUNCTION_URL =
   "https://dwttxgeapquhozmtacnw.supabase.co/functions/v1/submit-booking";
@@ -194,10 +11,10 @@ const serviceSelect = document.getElementById("service");
 const priceDisplay = document.getElementById("selectedPrice");
 const statusBox = document.getElementById("formStatus");
 const submitButton = document.getElementById("submitBooking");
+const photoInput = document.getElementById("photo");
 
 serviceSelect.addEventListener("change", () => {
-  const option = serviceSelect.selectedOptions[0];
-  const price = option.dataset.price;
+  const price = serviceSelect.selectedOptions[0].dataset.price;
 
   priceDisplay.textContent = price
     ? "₹" + Number(price).toLocaleString("en-IN")
@@ -206,35 +23,77 @@ serviceSelect.addEventListener("change", () => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  event.stopImmediatePropagation();
 
   if (!form.reportValidity()) return;
 
   const option = serviceSelect.selectedOptions[0];
+  const photo = photoInput.files[0];
 
-  const booking = {
-    customer_name: document.getElementById("name").value.trim(),
-    phone: document.getElementById("phone").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    service_type: serviceSelect.value,
-    price_inr: Number(option.dataset.price),
-    preferred_date: document.getElementById("date").value || null,
-    preferred_time: document.getElementById("time").value,
-    guidance_topic: "",
-    message: document.getElementById("concern").value.trim()
-  };
+  if (photo) {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ];
+
+    if (!allowedTypes.includes(photo.type)) {
+      statusBox.hidden = false;
+      statusBox.textContent =
+        "JPG, PNG அல்லது WebP புகைப்படத்தைத் தேர்ந்தெடுக்கவும்.";
+      return;
+    }
+
+    if (photo.size > 5 * 1024 * 1024) {
+      statusBox.hidden = false;
+      statusBox.textContent =
+        "புகைப்படத்தின் அளவு 5 MB-க்குள் இருக்க வேண்டும்.";
+      return;
+    }
+  }
+
+  const formData = new FormData();
+
+  formData.append(
+    "customer_name",
+    document.getElementById("name").value.trim()
+  );
+  formData.append(
+    "phone",
+    document.getElementById("phone").value.trim()
+  );
+  formData.append(
+    "email",
+    document.getElementById("email").value.trim()
+  );
+  formData.append("service_type", serviceSelect.value);
+  formData.append("price_inr", option.dataset.price);
+  formData.append(
+    "preferred_date",
+    document.getElementById("date").value
+  );
+  formData.append(
+    "preferred_time",
+    document.getElementById("time").value
+  );
+  formData.append("guidance_topic", "");
+  formData.append(
+    "message",
+    document.getElementById("concern").value.trim()
+  );
+
+  if (photo) {
+    formData.append("photo", photo);
+  }
 
   statusBox.hidden = false;
-  statusBox.textContent = "உங்கள் முன்பதிவு கோரிக்கை அனுப்பப்படுகிறது...";
+  statusBox.textContent =
+    "உங்கள் முன்பதிவு கோரிக்கை அனுப்பப்படுகிறது...";
   submitButton.disabled = true;
 
   try {
     const response = await fetch(SUPABASE_FUNCTION_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(booking)
+      body: formData
     });
 
     const result = await response.json();
@@ -257,13 +116,11 @@ form.addEventListener("submit", async (event) => {
     console.error("Booking submission failed:", error);
 
     statusBox.textContent =
-      "முன்பதிவு அனுப்பப்படவில்லை. இணைய இணைப்பு அல்லது backend அமைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.";
+      error instanceof Error
+        ? "முன்பதிவு அனுப்பப்படவில்லை: " + error.message
+        : "முன்பதிவு அனுப்பப்படவில்லை. மீண்டும் முயற்சிக்கவும்.";
   } finally {
     submitButton.disabled = false;
   }
-}, true);
+});
 </script>
-
-<script src="assets/js/main.js"></script>
-</body>
-</html>
