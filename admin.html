@@ -1,25 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Soul Therapy by Kalpana Devi</title>
 
--- Allow the authenticated admin to read bookings.
-GRANT SELECT ON TABLE public.bookings TO authenticated;
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-CREATE POLICY "Admin can view bookings"
-ON public.bookings
-FOR SELECT
-TO authenticated
-USING (
-  (SELECT auth.jwt() ->> 'email') = 'YOUR_ADMIN_EMAIL'
-);
+  <style>
+    :root {
+      --purple: #762b70;
+      --purple-dark: #4b194a;
+      --pink: #f8eaf5;
+      --bg: #faf7fb;
+      --border: #eadfea;
+      --text: #332b35;
+      --muted: #786e7c;
+      --white: #fff;
+      --green: #217747;
+      --red: #b42318;
+    }
 
--- Allow the authenticated admin to update bookings.
-GRANT UPDATE ON TABLE public.bookings TO authenticated;
+    * { box-sizing: border-box; }
 
-CREATE POLICY "Admin can update bookings"
-ON public.bookings
-FOR UPDATE
-TO authenticated
-USING (
-  (SELECT auth.jwt() ->> 'email') = 'YOUR_ADMIN_EMAIL'
-)
-WITH CHECK (
-  (SELECT auth.jwt() ->> 'email') = 'YOUR_ADMIN_EMAIL'
-);
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 9px;
+      padding: 11px 15px;
+      background: var(--purple);
+      color: white;
+      font-weight: 600;
+    }
+
+    button:hover { background: var(--purple-dark); }
+    button:disabled { opacity: .6; cursor: wait; }
+
+    .secondary {
+      background: #eee5ef;
+      color: var(--purple-dark);
+    }
+
+    .secondary:hover { background: #e2d4e4; }
+
+    .danger { background: #a52b38; }
+    .danger:hover { background: #821e29; }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 11px;
+      margin-top: 6px;
+      border: 1px solid #d8cbd9;
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+    }
+
+    textarea { resize: vertical; min-height: 75px; }
+
+    label {
+      display: block;
+      margin: 13px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .hidden { display: none !important; }
+
+    header {
+      background: linear-gradient(120deg, var(--purple-dark), var(--purple));
+      color: white;
+      padding: 22px;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    header h1 { font-size: 22px; margin: 0 0 6px; }
+    header p { margin: 0; opacity: .88; font-size: 14px; }
+
+    main {
+      width: min(1200px, 94%);
+      margin: 25px auto;
+    }
+
+    .panel, .stat, .booking-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 4px 15px #3c173808;
+    }
+
+    .auth-panel {
+      max-width: 440px;
+      margin: 45px auto;
+    }
+
+    h2 { font-size: 21px; margin-top: 0; }
+    h3 { font-size: 17px; }
+
+    .muted { color: var(--muted); font-size: 13px; }
+    .message { margin: 12px 0; font-size: 14px; white-space: pre-wrap; }
+    .error { color: var(--red); }
+    .success { color: var(--green); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat span { color: var(--muted); font-size: 13px; }
+    .stat strong { display: block; font-size: 27px; margin-top: 8px; }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .toolbar input, .toolbar select {
+      margin: 0;
+      flex: 1 1 180px;
+    }
+
+    #booking-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .booking-card { min-width: 0; }
+    .booking-card h3 { margin-top: 0; overflow-wrap: anywhere; }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .detail {
+      background: #fbf8fc;
+      border-radius: 8px;
+      padding: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .detail small {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .history {
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+      padding-top: 12px;
+    }
+
+    .history-entry {
+      border-left: 3px solid #d7b0d5;
+      padding: 8px 10px;
+      margin: 8px 0;
+      background: #fcf9fc;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 35px 15px;
+      color: var(--muted);
+    }
+
+    .small-button { padding: 8px 10px; font-size: 13px; }
+
+    @media (max-width: 800px) {
+      #booking-list { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 430px) {
+      main { width: 92%; }
+      .panel, .booking-card, .stat { padding: 15px; }
+      .details { grid-template-columns: 1fr; }
+      .full { grid-column: auto; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <h1>Soul Therapy by Kalpana Devi</h1>
+        <p>Booking Management Dashboard</p>
+      </div>
+      <button id="logout-button" class="secondary hidden">Log out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LOGIN -->
+    <section id="login-panel" class="panel auth-panel">
+      <h2>Admin Login</h2>
+      <p class="muted">Sign in to manage customer bookings.</p>
+
+      <form id="login-form">
+        <label>
+          Email address
+          <input id="login-email" type="email" autocomplete="username" required>
+        </label>
+
+        <label>
+          Password
+          <input id="login-password" type="password"
+                 autocomplete="current-password" required>
+        </label>
+
+        <button id="login-button" type="submit" style="width:100%">
+          Sign in
+        </button>
+      </form>
+
+      <p id="login-message" class="message" role="status"></p>
+
+      <button id="forgot-button" class="secondary" style="width:100%">
+        Forgot password?
+      </button>
+    </section>
+
+    <!-- SEND RECOVERY EMAIL -->
+    <section id="forgot-panel" class="panel auth-panel hidden">
+      <h2>Reset Password</h2>
+      <p>Enter your account email to request a password-reset link.</p>
+
+      <form id="forgot-form">
+        <label>
+          Email address
+          <input id="forgot-email" type="email" autocomplete="email" required>
+        </label>
+        <button id="forgot-submit" type="submit" style="width:100%">
+          Send reset link
+        </button>
+      </form>
+
+      <p id="forgot-message" class="message" role="status"></p>
+      <button id="back-login" class="secondary">Back to login</button>
+    </section>
+
+    <!-- SET NEW PASSWORD -->
+    <section id="recovery-panel" class="panel auth-panel hidden">
+      <h2>Choose a New Password</h2>
+
+      <form id="recovery-form">
+        <label>
+          New password
+          <input id="new-password" type="password"
+                 autocomplete="new-password" minlength="8" required>
+        </label>
+
+        <label>
+          Confirm new password
+          <input id="confirm-password" type="password"
+                 autocomplete="new-password" minlength="8" required>
+        </label>
+
+        <button id="recovery-submit" type="submit" style="width:100%">
+          Update password
+        </button>
+      </form>
+
+      <p id="recovery-message" class="message" role="status"></p>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard-panel" class="hidden">
+      <div class="stats">
+        <div class="stat">
+          <span>Total bookings loaded</span>
+          <strong id="stat-total">0</strong>
+        </div>
+        <div class="stat">
+          <span>New bookings</span>
+          <strong id="stat-new">0</strong>
+        </div>
+        <div class="stat">
+          <span>Person A</span>
+          <strong id="stat-a">0</strong>
+        </div>
+        <div class="stat">
+          <span>Person B</span>
+          <strong id="stat-b">0</strong>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="toolbar">
+          <input id="search-input" type="search"
+                 placeholder="Search name, phone, email or service">
+
+          <select id="assignment-filter">
+            <option value="">All assignments</option>
+            <option value="Unassigned">Unassigned</option>
+            <option value="Person A">Person A</option>
+            <option value="Person B">Person B</option>
+          </select>
+
+          <select id="status-filter">
+            <option value="">All statuses</option>
+            <option value="New">New</option>
+            <option value="Contacted">Contacted</option>
+            <option value="Follow-up">Follow-up</option>
+            <option value="Completed">Completed</option>
+            <option value="Not reachable">Not reachable</option>
+          </select>
+
+          <button id="refresh-button">Refresh</button>
+        </div>
+
+        <p id="dashboard-message" class="message" role="status"></p>
+        <div id="booking-list">
+          <div class="empty">Sign in to load bookings.</div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    // --------------------------------------------------
+    // SUPABASE CONNECTION
+    // Use your project's public publishable/anon key here.
+    // Never put a service-role key in this frontend file.
+    // --------------------------------------------------
+
+    const SUPABASE_URL =
+      "https://dwttxgeapquhozmtacnw.supabase.co";
+
+    const SUPABASE_ANON_KEY =
+      "sb_publishable_Vb64lCwatK_dmW6GMQWY9Q_ERq0VnSI";
+
+    const client = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      }
+    );
+
+    // --------------------------------------------------
+    // ELEMENTS AND STATE
+    // --------------------------------------------------
+
+    const $ = (id) => document.getElementById(id);
+
+    const panels = [
+      "login-panel",
+      "forgot-panel",
+      "recovery-panel",
+      "dashboard-panel"
+    ];
+
+    let bookings = [];
+    let historyByBooking = {};
+    let currentUser = null;
+    let recoveryMode = false;
+
+    function showPanel(panelId) {
+      panels.forEach(id => $(id).classList.toggle("hidden", id !== panelId));
+      $("logout-button").classList.toggle(
+        "hidden",
+        panelId !== "dashboard-panel"
+      );
+    }
+
+    function setMessage(id, message, type = "") {
+      const el = $(id);
+      el.textContent = message;
+      el.className = "message " + type;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function valueOrDash(value) {
+      return value === null || value === undefined || value === ""
+        ? "—"
+        : String(value);
+    }
+
+    function prettyDate(value) {
+      if (!value) return "—";
+      const date = new Date(value);
+      return Number.isNaN(date.getTime())
+        ? String(value)
+        : date.toLocaleString();
+    }
+
+    function bookingId(booking) {
+      return booking.id;
+    }
+
+    function getStatus(booking) {
+      return booking.contact_status || "New";
+    }
+
+    function getAssignment(booking) {
+      return booking.assigned_to || "Unassigned";
+    }
+
+    function showError(prefix, error) {
+      console.error(prefix, error);
+      return prefix + (error?.message ? ": " + error.message : "");
+    }
+
+    // --------------------------------------------------
+    // AUTHENTICATION
+    // --------------------------------------------------
+
+    $("login-form").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const button = $("login-button");
+      button.disabled = true;
+      setMessage("login-message", "Signing in...");
+
+      try {
+        const { data, error } = await client.auth.signInWithPassword({
+          email: $("login-email").value.trim(),
+          password: $("login-password").value
+        });
+
+        if (error) throw error;
+
+        currentUser = data.user;
+        await loadDashboard();
+      } catch (error) {
+        setMessage(
+          "login-message",
+          showError("Login failed", error),
+          "error"
+        );
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("forgot-button").addEventListener("click", () => {
+      $("forgot-email").value = $("login-email").value.trim();
+      setMessage("forgot-message", "");
+      showPanel("forgot-panel");
+    });
+
+    $("back-login").addEventListener("click", () => {
+      setMessage("login-message", "");
+      showPanel("login-panel");
+    });
+
+    $("forgot-form").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const button = $("forgot-submit");
+      button.disabled = true;
+      setMessage("forgot-message", "Requesting password-reset email...");
+
+      try {
+        const email = $("forgot-email").value.trim();
+
+        // Recovery link returns to this admin page.
+        const redirectTo = new URL(
+          "admin.html",
+          window.location.href
+        ).href;
+
+        const { error } = await client.auth.resetPasswordForEmail(email, {
+          redirectTo
+        });
+
+        if (error) throw error;
+
+        setMessage(
+          "forgot-message",
+          "If the request was accepted, check your email and spam folder for the reset link. If email rate limits are reached, wait before trying again.",
+          "success"
+        );
+      } catch (error) {
+        setMessage(
+          "forgot-message",
+          showError("Password reset request failed", error),
+          "error"
+        );
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("recovery-form").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const password = $("new-password").value;
+      const confirmation = $("confirm-password").value;
+
+      if (password.length < 8) {
+        setMessage("recovery-message", "Use at least 8 characters.", "error");
+        return;
+      }
+
+      if (password !== confirmation) {
+        setMessage("recovery-message", "The passwords do not match.", "error");
+        return;
+      }
+
+      const button = $("recovery-submit");
+      button.disabled = true;
+      setMessage("recovery-message", "Updating password...");
+
+      try {
+        const { data, error } = await client.auth.updateUser({ password });
+
+        if (error) throw error;
+
+        recoveryMode = false;
+        currentUser = data.user;
+
+        // Remove recovery tokens from the URL after successful update.
+        history.replaceState({}, document.title, window.location.pathname);
+
+        setMessage(
+          "recovery-message",
+          "Password updated successfully. Opening dashboard...",
+          "success"
+        );
+
+        await loadDashboard();
+      } catch (error) {
+        setMessage(
+          "recovery-message",
+          showError("Could not update password", error),
+          "error"
+        );
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("logout-button").addEventListener("click", async () => {
+      const { error } = await client.auth.signOut();
+
+      if (error) {
+        setMessage(
+          "dashboard-message",
+          showError("Logout failed", error),
+          "error"
+        );
+        return;
+      }
+
+      currentUser = null;
+      bookings = [];
+      historyByBooking = {};
+      showPanel("login-panel");
+      setMessage("login-message", "You have been logged out.", "success");
+    });
+
+    client.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        recoveryMode = true;
+        showPanel("recovery-panel");
+        setMessage("recovery-message", "Enter your new password.");
+        return;
+      }
+
+      if (session?.user) {
+        currentUser = session.user;
+
+        if (!recoveryMode && $("dashboard-panel").classList.contains("hidden")) {
+          // Defer data fetching out of the auth callback.
+          setTimeout(() => {
+            if (currentUser && !recoveryMode) loadDashboard();
+          }, 0);
+        }
+      } else if (!recoveryMode) {
+        currentUser = null;
+        showPanel("login-panel");
+      }
+    });
+
+    // --------------------------------------------------
+    // LOAD DASHBOARD
+    // --------------------------------------------------
+
+    async function loadDashboard() {
+      if (!currentUser) {
+        showPanel("login-panel");
+        return;
+      }
+
+      showPanel("dashboard-panel");
+      setMessage("dashboard-message", "Loading bookings...");
+
+      $("booking-list").innerHTML =
+        '<div class="empty">Loading bookings...</div>';
+
+      try {
+        const { data, error } = await client
+          .from("bookings")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        bookings = data || [];
+        await loadHistory();
+        renderDashboard();
+
+        setMessage(
+          "dashboard-message",
+          bookings.length
+            ? "Bookings loaded successfully."
+            : "No bookings were found.",
+          "success"
+        );
+      } catch (error) {
+        bookings = [];
+        historyByBooking = {};
+        renderDashboard();
+
+        setMessage(
+          "dashboard-message",
+          showError("Could not load bookings", error) +
+          ". Check the table permissions and Supabase connection.",
+          "error"
+        );
+      }
+    }
+
+    async function loadHistory() {
+      historyByBooking = {};
+
+      if (!bookings.length) return;
+
+      const { data, error } = await client
+        .from("booking_contact_history")
+        .select("*")
+        .order("contacted_at", { ascending: false });
+
+      if (error) {
+        // Booking list can still render if history permissions are not ready.
+        console.warn("Contact history could not be loaded:", error.message);
+        return;
+      }
+
+      (data || []).forEach(entry => {
+        const key = String(entry.booking_id);
+        if (!historyByBooking[key]) historyByBooking[key] = [];
+        historyByBooking[key].push(entry);
+      });
+    }
+
+    // --------------------------------------------------
+    // DASHBOARD STATS AND FILTERS
+    // --------------------------------------------------
+
+    function renderDashboard() {
+      $("stat-total").textContent = bookings.length;
+      $("stat-new").textContent =
+        bookings.filter(b => getStatus(b) === "New").length;
+      $("stat-a").textContent =
+        bookings.filter(b => getAssignment(b) === "Person A").length;
+      $("stat-b").textContent =
+        bookings.filter(b => getAssignment(b) === "Person B").length;
+
+      const search = $("search-input").value.trim().toLowerCase();
+      const assignment = $("assignment-filter").value;
+      const status = $("status-filter").value;
+
+      const filtered = bookings.filter(booking => {
+        const searchable = [
+          booking.name,
+          booking.full_name,
+          booking.phone,
+          booking.email,
+          booking.service,
+          booking.service_name,
+          booking.concern
+        ].filter(Boolean).join(" ").toLowerCase();
+
+        const assignmentMatch =
+          !assignment || getAssignment(booking) === assignment;
+
+        const statusMatch =
+          !status || getStatus(booking) === status;
+
+        return searchable.includes(search) &&
+          assignmentMatch &&
+          statusMatch;
+      });
+
+      const container = $("booking-list");
+
+      if (!filtered.length) {
+        container.innerHTML =
+          '<div class="empty">No matching bookings.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(renderBookingCard).join("");
+      attachCardEvents();
+    }
+
+    function detail(label, value, full = false) {
+      return `
+        <div class="detail ${full ? "full" : ""}">
+          <small>${escapeHtml(label)}</small>
+          <div>${escapeHtml(valueOrDash(value))}</div>
+        </div>`;
+    }
+
+    function renderBookingCard(booking) {
+      const id = String(bookingId(booking));
+      const assignment = getAssignment(booking);
+      const status = getStatus(booking);
+      const notes = booking.follow_up_notes || "";
+      const history = historyByBooking[id] || [];
+
+      const historyHtml = history.length
+        ? history.map(entry => `
+            <div class="history-entry">
+              <strong>${escapeHtml(entry.contacted_by || "Staff")}</strong>
+              — ${escapeHtml(entry.contact_status || "Contacted")}
+              <div class="muted">${escapeHtml(prettyDate(entry.contacted_at))}</div>
+              <div>${escapeHtml(entry.notes || "No notes")}</div>
+            </div>
+          `).join("")
+        : '<p class="muted">No contact history available.</p>';
+
+      const name = booking.name || booking.full_name || "Customer";
+      const service = booking.service || booking.service_name || "—";
+
+      return `
+        <article class="booking-card" data-booking-id="${escapeHtml(id)}">
+          <h3>${escapeHtml(name)}</h3>
+          <div class="muted">Booking ID: ${escapeHtml(id)}</div>
+
+          <div class="details">
+            ${detail("Phone", booking.phone)}
+            ${detail("Email", booking.email)}
+            ${detail("Service", service)}
+            ${detail("Booking date", booking.date || booking.booking_date)}
+            ${detail("Booking time", booking.time || booking.booking_time)}
+            ${detail("Created", prettyDate(booking.created_at))}
+            ${detail("Concern", booking.concern || booking.message, true)}
+          </div>
+
+          <label>
+            Assigned staff
+            <select data-field="assigned_to">
+              <option value="" ${assignment === "Unassigned" ? "selected" : ""}>Unassigned</option>
+              <option value="Person A" ${assignment === "Person A" ? "selected" : ""}>Person A</option>
+              <option value="Person B" ${assignment === "Person B" ? "selected" : ""}>Person B</option>
+            </select>
+          </label>
+
+          <label>
+            Contact status
+            <select data-field="contact_status">
+              ${["New", "Contacted", "Follow-up", "Completed", "Not reachable"].map(option =>
+                `<option value="${option}" ${status === option ? "selected" : ""}>${option}</option>`
+              ).join("")}
+            </select>
+          </label>
+
+          <label>
+            Follow-up notes
+            <textarea data-field="follow_up_notes"
+              placeholder="Add follow-up details...">${escapeHtml(notes)}</textarea>
+          </label>
+
+          <div class="card-actions">
+            <button class="save-button small-button">Save changes</button>
+            <button class="log-button small-button secondary">Log contact</button>
+            <button class="history-button small-button secondary">View history</button>
+          </div>
+
+          <div class="history hidden">${historyHtml}</div>
+        </article>`;
+    }
+
+    // --------------------------------------------------
+    // SAVE ASSIGNMENT, STATUS AND NOTES
+    // --------------------------------------------------
+
+    function attachCardEvents() {
+      document.querySelectorAll(".booking-card").forEach(card => {
+        const id = card.dataset.bookingId;
+
+        card.querySelector(".save-button").addEventListener("click", async () => {
+          const booking = bookings.find(b => String(bookingId(b)) === id);
+          if (!booking) return;
+
+          const assignedTo = card.querySelector('[data-field="assigned_to"]').value;
+          const contactStatus = card.querySelector('[data-field="contact_status"]').value;
+          const notes = card.querySelector('[data-field="follow_up_notes"]').value.trim();
+
+          const updates = {
+            assigned_to: assignedTo || null,
+            contact_status: contactStatus,
+            follow_up_notes: notes || null
+          };
+
+          const button = card.querySelector(".save-button");
+          button.disabled = true;
+
+          try {
+            const { error } = await client
+              .from("bookings")
+              .update(updates)
+              .eq("id", booking.id);
+
+            if (error) throw error;
+
+            Object.assign(booking, updates);
+            setMessage("dashboard-message", "Booking updated.", "success");
+            renderDashboard();
+          } catch (error) {
+            setMessage(
+              "dashboard-message",
+              showError("Could not save booking", error),
+              "error"
+            );
+          } finally {
+            button.disabled = false;
+          }
+        });
+
+        // ------------------------------------------------
+        // LOG CONTACT
+        // ------------------------------------------------
+        card.querySelector(".log-button").addEventListener("click", async () => {
+          const booking = bookings.find(b => String(bookingId(b)) === id);
+          if (!booking) return;
+
+          const assignedTo =
+            card.querySelector('[data-field="assigned_to"]').value;
+          const status =
+            card.querySelector('[data-field="contact_status"]').value;
+          const notes =
+            card.querySelector('[data-field="follow_up_notes"]').value.trim();
+
+          const staffName = assignedTo || "Admin";
+
+          const button = card.querySelector(".log-button");
+          button.disabled = true;
+
+          try {
+            const { error: updateError } = await client
+              .from("bookings")
+              .update({
+                assigned_to: assignedTo || null,
+                contact_status: status,
+                contacted_by: staffName,
+                last_contacted_at: new Date().toISOString(),
+                follow_up_notes: notes || null
+              })
+              .eq("id", booking.id);
+
+            if (updateError) throw updateError;
+
+            const { error: historyError } = await client
+              .from("booking_contact_history")
+              .insert({
+                booking_id: booking.id,
+                contacted_by: staffName,
+                contact_status: status,
+                notes: notes || null
+              });
+
+            if (historyError) {
+              throw new Error(
+                "Booking updated, but contact history could not be saved: " +
+                historyError.message
+              );
+            }
+
+            setMessage(
+              "dashboard-message",
+              "Contact activity saved.",
+              "success"
+            );
+
+            await loadDashboard();
+          } catch (error) {
+            setMessage(
+              "dashboard-message",
+              showError("Could not log contact", error),
+              "error"
+            );
+          } finally {
+            button.disabled = false;
+          }
+        });
+
+        card.querySelector(".history-button").addEventListener("click", () => {
+          const history = card.querySelector(".history");
+          history.classList.toggle("hidden");
+          card.querySelector(".history-button").textContent =
+            history.classList.contains("hidden")
+              ? "View history"
+              : "Hide history";
+        });
+      });
+    }
+
+    // --------------------------------------------------
+    // SEARCH AND FILTERS
+    // --------------------------------------------------
+
+    $("search-input").addEventListener("input", renderDashboard);
+    $("assignment-filter").addEventListener("change", renderDashboard);
+    $("status-filter").addEventListener("change", renderDashboard);
+    $("refresh-button").addEventListener("click", loadDashboard);
+
+    // --------------------------------------------------
+    // STARTUP
+    // --------------------------------------------------
+
+    async function startApp() {
+      try {
+        const { data, error } = await client.auth.getSession();
+
+        if (error) throw error;
+
+        // Supabase can process the recovery event from the URL.
+        if (window.location.hash.includes("type=recovery")) {
+          recoveryMode = true;
+          showPanel("recovery-panel");
+          setMessage(
+            "recovery-message",
+            "Enter and confirm your new password."
+          );
+          return;
+        }
+
+        if (data.session?.user) {
+          currentUser = data.session.user;
+          await loadDashboard();
+        } else {
+          showPanel("login-panel");
+        }
+      } catch (error) {
+        console.error("Startup error:", error);
+        showPanel("login-panel");
+        setMessage(
+          "login-message",
+          showError("Could not initialize the dashboard", error),
+          "error"
+        );
+      }
+    }
+
+    startApp();
+  </script>
+</body>
+</html>
