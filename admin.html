@@ -1,0 +1,342 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard | Soul Therapy</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --pink: #a74478;
+      --light-pink: #fff3f8;
+      --gold: #d4ad68;
+      --ink: #342531;
+      --muted: #786d77;
+      --border: #eadfe7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #fcf8fb;
+      color: var(--ink);
+    }
+    header {
+      background: white;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    header h1 { font-size: 19px; margin: 0; }
+    header p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    main { max-width: 1150px; margin: 28px auto; padding: 0 16px; }
+    .panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 20px #5b254008;
+    }
+    h2 { margin-top: 0; font-size: 20px; }
+    .sub { color: var(--muted); font-size: 14px; line-height: 1.6; }
+    label { display: block; font-size: 13px; margin: 14px 0 6px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font: inherit;
+      background: white;
+    }
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 11px 15px;
+      background: var(--pink);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary { background: #f3e8ef; color: var(--ink); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .hidden { display: none !important; }
+    #message { margin-top: 14px; font-size: 14px; overflow-wrap: anywhere; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat {
+      background: var(--light-pink);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .stat strong { display: block; font-size: 23px; margin-top: 8px; }
+    .stat span { font-size: 13px; color: var(--muted); }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 850px; }
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th { background: #fff8fb; }
+    td small { display: block; color: var(--muted); margin-top: 5px; }
+    td select { min-width: 125px; padding: 8px; }
+    .tag { color: var(--pink); font-weight: 700; }
+    footer { text-align: center; padding: 24px; color: var(--muted); font-size: 12px; }
+    @media (max-width: 600px) {
+      header { padding: 15px; }
+      main { margin-top: 18px; }
+      .stats { grid-template-columns: 1fr; }
+      .panel { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Soul Therapy by Kalpana Devi</h1>
+    <p>Private customer management</p>
+  </div>
+  <button id="logoutBtn" class="secondary hidden">Sign out</button>
+</header>
+
+<main>
+  <section id="loginPanel" class="panel">
+    <h2>Team Login</h2>
+    <p class="sub">Sign in with your authorized dashboard account.</p>
+    <form id="loginForm">
+      <label for="email">Email address</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <div class="actions">
+        <button type="submit" id="loginBtn">Sign in</button>
+      </div>
+    </form>
+    <p id="loginMessage" role="status"></p>
+  </section>
+
+  <section id="dashboard" class="hidden">
+    <div class="panel">
+      <h2>Shared Customer Dashboard</h2>
+      <p class="sub">Bookings, ownership and contact status. Changes will only work after secure database permissions are configured.</p>
+      <div class="actions">
+        <button id="refreshBtn">Refresh bookings</button>
+      </div>
+      <p id="dashboardMessage" role="status"></p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span>Total bookings</span><strong id="totalCount">—</strong></div>
+      <div class="stat"><span>New / unassigned</span><strong id="newCount">—</strong></div>
+      <div class="stat"><span>Contacted</span><strong id="contactedCount">—</strong></div>
+    </div>
+
+    <div class="panel">
+      <h2>Customer bookings</h2>
+      <p class="sub">Assign one owner per booking. Always check the current owner before contacting a customer.</p>
+      <label for="search">Search by name or phone</label>
+      <input id="search" type="search" placeholder="Search bookings…" autocomplete="off">
+      <div class="table-wrap" style="margin-top:16px">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Service</th>
+              <th>Appointment</th>
+              <th>Assigned to</th>
+              <th>Contact status</th>
+              <th>Last contacted by</th>
+              <th>Follow-up notes</th>
+            </tr>
+          </thead>
+          <tbody id="bookingRows">
+            <tr><td colspan="7">Sign in and refresh to load bookings.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Customer information is confidential. Use only from an authorized account.</footer>
+
+<script>
+(() => {
+  // Supabase project settings: use the publishable/anon key only.
+  // NEVER put a service-role or secret key in this file.
+  const SUPABASE_URL = "https://dwttxgeapquhozmtacnw.supabase.co";
+ const SUPABASE_ANON_KEY = "YOUR_ACTUAL_PUBLIC_KEY_HERE";
+
+  const $ = (id) => document.getElementById(id);
+  const loginPanel = $("loginPanel");
+  const dashboard = $("dashboard");
+  let client = null;
+  let bookings = [];
+
+  function showMessage(id, message) {
+    $(id).textContent = message;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;",
+      '"': "&quot;", "'": "&#39;"
+    })[ch]);
+  }
+
+  function dateText(value) {
+    if (!value) return "—";
+    return escapeHtml(value);
+  }
+
+  function setSignedIn(isSignedIn) {
+    loginPanel.classList.toggle("hidden", isSignedIn);
+    dashboard.classList.toggle("hidden", !isSignedIn);
+    $("logoutBtn").classList.toggle("hidden", !isSignedIn);
+  }
+
+  function updateStats() {
+    $("totalCount").textContent = bookings.length;
+    $("newCount").textContent = bookings.filter(b =>
+      !b.assigned_to || b.contact_status === "New"
+    ).length;
+    $("contactedCount").textContent = bookings.filter(b =>
+      ["Contacted", "Follow-up Needed", "Completed"].includes(b.contact_status)
+    ).length;
+  }
+
+  function renderBookings() {
+    const term = $("search").value.trim().toLowerCase();
+    const filtered = bookings.filter(b =>
+      String(b.customer_name || "").toLowerCase().includes(term) ||
+      String(b.phone || "").toLowerCase().includes(term)
+    );
+    const tbody = $("bookingRows");
+
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="7">No bookings found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(b => `
+      <tr>
+        <td><strong>${escapeHtml(b.customer_name)}</strong>
+          <small>${escapeHtml(b.phone)}</small>
+          <small>${escapeHtml(b.email || "")}</small>
+        </td>
+        <td>${escapeHtml(b.service_type || "—")}
+          <small>₹${escapeHtml(b.price_inr ?? "—")}</small>
+        </td>
+        <td>${dateText(b.preferred_date)}
+          <small>${dateText(b.preferred_time)}</small>
+        </td>
+        <td>${escapeHtml(b.assigned_to || "Unassigned")}</td>
+        <td><span class="tag">${escapeHtml(b.contact_status || "New")}</span></td>
+        <td>${escapeHtml(b.contacted_by || "—")}
+          <small>${dateText(b.last_contacted_at)}</small>
+        </td>
+        <td>${escapeHtml(b.follow_up_notes || "—")}</td>
+      </tr>
+    `).join("");
+  }
+
+  async function loadBookings() {
+    showMessage("dashboardMessage", "Loading bookings…");
+    $("refreshBtn").disabled = true;
+
+    try {
+      const { data, error } = await client
+        .from("bookings")
+        .select("id, customer_name, phone, email, service_type, price_inr, preferred_date, preferred_time, assigned_to, contact_status, contacted_by, last_contacted_at, follow_up_notes")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      bookings = data || [];
+      updateStats();
+      renderBookings();
+      showMessage("dashboardMessage", "Bookings loaded successfully.");
+    } catch (error) {
+      showMessage(
+        "dashboardMessage",
+        "Bookings could not be loaded. Secure database permissions may not be configured yet. Details: " + error.message
+      );
+    } finally {
+      $("refreshBtn").disabled = false;
+    }
+  }
+
+  async function initialize() {
+    if (!window.supabase) {
+      showMessage("loginMessage", "The Supabase library did not load. Check your internet connection.");
+      return;
+    }
+    if (SUPABASE_ANON_KEY.includes("PASTE_YOUR")) {
+      showMessage("loginMessage", "Setup needed: add your Supabase publishable/anon key before signing in.");
+      return;
+    }
+
+    client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const { data: { session } } = await client.auth.getSession();
+    setSignedIn(!!session);
+    if (session) await loadBookings();
+
+    client.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(!!session);
+      if (session) loadBookings();
+    });
+  }
+
+  $("loginForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!client) {
+      await initialize();
+      if (!client) return;
+    }
+
+    $("loginBtn").disabled = true;
+    showMessage("loginMessage", "Signing in…");
+    try {
+      const { error } = await client.auth.signInWithPassword({
+        email: $("email").value.trim(),
+        password: $("password").value
+      });
+      if (error) throw error;
+      $("password").value = "";
+      showMessage("loginMessage", "");
+    } catch (error) {
+      showMessage("loginMessage", "Sign-in failed: " + error.message);
+    } finally {
+      $("loginBtn").disabled = false;
+    }
+  });
+
+  $("refreshBtn").addEventListener("click", loadBookings);
+  $("search").addEventListener("input", renderBookings);
+
+  $("logoutBtn").addEventListener("click", async () => {
+    if (!client) return;
+    await client.auth.signOut();
+    bookings = [];
+    setSignedIn(false);
+    showMessage("loginMessage", "You have signed out.");
+  });
+
+  initialize();
+})();
+</script>
+</body>
+</html>
