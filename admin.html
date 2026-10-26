@@ -323,6 +323,7 @@
           <option value="Not reachable">Not reachable</option>
         </select>
 
+        <button id="auto-split-button" type="button">Auto Split Customers Equally</button>
         <button id="refresh-button">Refresh</button>
       </div>
 
@@ -416,7 +417,7 @@ function getStatus(booking) {
   return booking.contact_status || "New";
 }
 
-// Older records using Person A / Person B are displayed as Sathya / Durga.
+// Show old assignments with the updated staff names.
 function getAssignment(booking) {
   const staff = booking.assigned_to;
   if (staff === "Person A") return "Sathya";
@@ -493,6 +494,7 @@ $("forgot-form").addEventListener("submit", async event => {
   }
 });
 
+// UPDATE PASSWORD
 $("recovery-form").addEventListener("submit", async event => {
   event.preventDefault();
 
@@ -514,19 +516,20 @@ $("recovery-form").addEventListener("submit", async event => {
   setMessage("recovery-message", "Updating password...");
 
   try {
-    const { data, error } = await client.auth.updateUser({ password });
+    const { error } = await client.auth.updateUser({ password });
     if (error) throw error;
-
-    recoveryMode = false;
-    currentUser = data.user;
-    window.history.replaceState({}, document.title, window.location.pathname);
 
     setMessage(
       "recovery-message",
-      "Password updated successfully. Opening dashboard...",
+      "Password updated successfully. Please sign in with your new password.",
       "success"
     );
-    await loadDashboard();
+
+    await client.auth.signOut();
+    recoveryMode = false;
+    $("recovery-form").reset();
+    showPanel("login-panel");
+    setMessage("login-message", "Password updated. Please sign in.", "success");
   } catch (error) {
     setMessage(
       "recovery-message",
@@ -592,12 +595,13 @@ async function loadDashboard() {
     setMessage(
       "dashboard-message",
       showError("Could not load bookings", error) +
-        ". Check the Supabase permissions.",
+        ". Check the table permissions and Supabase connection.",
       "error"
     );
   }
 }
 
+// LOAD CONTACT HISTORY
 async function loadHistory() {
   historyByBooking = {};
   if (!bookings.length) return;
@@ -634,21 +638,18 @@ function renderDashboard() {
   const status = $("status-filter").value;
   const dateFilter = $("date-filter").value;
 
-  const todayIndia = new Intl.DateTimeFormat("en-CA", {
+  const dateFormatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
-  }).format(new Date());
+  });
+
+  const todayIndia = dateFormatter.format(new Date());
 
   const filtered = bookings.filter(booking => {
     const createdDateIndia = booking.created_at
-      ? new Intl.DateTimeFormat("en-CA", {
-          timeZone: "Asia/Kolkata",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit"
-        }).format(new Date(booking.created_at))
+      ? dateFormatter.format(new Date(booking.created_at))
       : "";
 
     const dateMatch =
@@ -891,6 +892,79 @@ $("date-filter").addEventListener("change", renderDashboard);
 $("assignment-filter").addEventListener("change", renderDashboard);
 $("status-filter").addEventListener("change", renderDashboard);
 $("refresh-button").addEventListener("click", loadDashboard);
+
+// AUTOMATICALLY SPLIT ALL CUSTOMERS EQUALLY BETWEEN SATHYA AND DURGA.
+// This saves assignments to Supabase so they remain after refreshing.
+$("auto-split-button").addEventListener("click", async () => {
+  if (!currentUser) {
+    setMessage("dashboard-message", "Please sign in first.", "error");
+    return;
+  }
+
+  if (!bookings.length) {
+    setMessage("dashboard-message", "There are no customers to split.", "error");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Automatically reassign all " + bookings.length +
+    " customers equally between Sathya and Durga? Existing staff assignments will be replaced."
+  );
+  if (!confirmed) return;
+
+  const button = $("auto-split-button");
+  button.disabled = true;
+  setMessage("dashboard-message", "Splitting customers equally...");
+
+  try {
+    // Sort oldest bookings first so the split is predictable and balanced.
+    const ordered = [...bookings].sort((a, b) => {
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return aTime - bTime ||
+        String(bookingId(a)).localeCompare(String(bookingId(b)));
+    });
+
+    for (let i = 0; i < ordered.length; i++) {
+      const staff = i % 2 === 0 ? "Sathya" : "Durga";
+
+      const { error } = await client
+        .from("bookings")
+        .update({ assigned_to: staff })
+        .eq("id", ordered[i].id);
+
+      if (error) throw error;
+      ordered[i].assigned_to = staff;
+    }
+
+    bookings = bookings.map(booking => {
+      const updated = ordered.find(
+        item => String(item.id) === String(booking.id)
+      );
+      return updated || booking;
+    });
+
+    renderDashboard();
+
+    setMessage(
+      "dashboard-message",
+      "Customers split successfully: Sathya " +
+        Math.ceil(bookings.length / 2) +
+        ", Durga " + Math.floor(bookings.length / 2) + ".",
+      "success"
+    );
+  } catch (error) {
+    setMessage(
+      "dashboard-message",
+      showError("Could not finish splitting customers", error) +
+        ". Please refresh the dashboard to check saved assignments.",
+      "error"
+    );
+    await loadDashboard();
+  } finally {
+    button.disabled = false;
+  }
+});
 
 // AUTH STATE CHANGES
 client.auth.onAuthStateChange((event, session) => {
